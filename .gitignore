@@ -61,3 +61,7 @@ Thumbs.db
 
 # Generated files
 *.cache/
+
+# ignore copy
+App*copy*.js
+App*Copy*.js

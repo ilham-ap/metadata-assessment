@@ -6,6 +6,7 @@ import AssessmentSection from './components/AssessmentSection';
 import CheckList from './components/CheckList';
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMLParser } from 'fast-xml-parser';
+import rules from "./fair_checks.json";
 
 function App() {
   const [data, setData] = useState(null);
@@ -18,145 +19,247 @@ function App() {
   // -------------------
   // MAIN CHECK FUNCTION
   // -------------------
-  function checkMetadata(md) {
-    const result = {
-      totalChecks: 0,
-      totalScores: { Findable: 0, Accessible: 0, Interoperable: 0, Reusable: 0 },
-      passed: 0,
-      warnings: 0,
-      failed: 0,
-      informational: 0,
-      passedScores: { Findable: 0, Accessible: 0, Interoperable: 0, Reusable: 0 },
-      passedChecks: [],
-      warningChecks: [],
-      failedChecks: [],
-      informationalCheck: [],
-    };
 
-    const addResult = (condition, successMsg, failureMsg, level = 'REQUIRED', principle = 'Findable') => {
-      result.totalChecks++;
-      result.totalScores[principle]++;
-      if (condition) {
-        result.passed++;
-        result.passedScores[principle]++;
-        result.passedChecks.push({ message: successMsg, level, principle });
-      } else {
-        if (level === 'REQUIRED') {
-          result.failed++;
-          result.failedChecks.push({ message: failureMsg, level, principle });
-        } else {
-          result.warnings++;
-          result.warningChecks.push({ message: failureMsg, level, principle });
-        }
+function countWords(text) {
+
+  return text
+    ?.split(/\s+/)
+    .filter(Boolean)
+    .length || 0;
+
+}
+
+function replaceTemplate(msg, context) {
+
+  return msg
+    .replace("{count}", context.count ?? "")
+    .replace("{value}", context.value ?? "")
+    .replace("{min}", context.min ?? "");
+
+}
+
+function evaluateRule(md, rule) {
+
+  let value = md[rule.field];
+  let count = 0;
+  let condition = false;
+
+  switch (rule.type) {
+
+    case "exists":
+
+      condition = !!value;
+
+      break;
+
+
+    case "wordCount":
+
+      count = countWords(value);
+
+      condition = count >= rule.min;
+
+      break;
+
+
+    case "arrayNotEmpty":
+
+      condition =
+        Array.isArray(value)
+        && value.length > 0;
+
+      break;
+
+  }
+
+  return {
+
+    condition,
+
+    context: {
+
+      value,
+      count,
+      min: rule.min
+
+    }
+
+  };
+
+}
+
+function checkMetadata(md) {
+
+  const result = {
+
+    totalChecks: 0,
+
+    totalScores: {
+
+      Findable: 0,
+      Accessible: 0,
+      Interoperable: 0,
+      Reusable: 0
+
+    },
+
+    passed: 0,
+    warnings: 0,
+    failed: 0,
+    informational: 0,
+
+    passedScores: {
+
+      Findable: 0,
+      Accessible: 0,
+      Interoperable: 0,
+      Reusable: 0
+
+    },
+
+    passedChecks: [],
+    warningChecks: [],
+    failedChecks: [],
+    informationalCheck: []
+
+  };
+
+
+  function addResult(condition, successMsg, failureMsg, level, principle) {
+
+    result.totalChecks++;
+
+    result.totalScores[principle]++;
+
+
+    if (condition) {
+
+      result.passed++;
+
+      result.passedScores[principle]++;
+
+      result.passedChecks.push({
+
+        message: successMsg,
+        level,
+        principle
+
+      });
+
+    }
+
+    else {
+
+      if (level === "REQUIRED") {
+
+        result.failed++;
+
+        result.failedChecks.push({
+
+          message: failureMsg,
+          level,
+          principle
+
+        });
+
       }
-    };
 
-    const addInfo = (infoMsg, level, principle) => {
-      result.informational++;
-      result.informationalCheck.push({ message: infoMsg, level, principle });
-    };
+      else {
 
-    // === Basic FAIR Checks ===
-     const titleCount = md.title?.split(/\s+/).filter(Boolean).length || 0;
-  addResult(titleCount >= 4,
-    `The title contains ${titleCount} words. Meets the minimum recommended value of 4.`,
-    `The title contains ${titleCount} words. Minimum required is 7.`, 'REQUIRED', 'Findable');
-    
-  addResult(!!md.metadataIdentifier,
-    `The metadata identifier '${md.metadataIdentifier}' was found.`,
-    `No identifiers were found.`, 'REQUIRED', 'Findable');
+        result.warnings++;
 
-  const author = md.authors || [];
-  addResult(author.length > 0,
-    `A resource author '${md.authors[0].name}' was found (first of 1 author name).`,
-    `A resource author was missing.`, 'REQUIRED', 'Findable');
-  
-  addResult(author.length > 0,
-    `The resource author identifier '${md.authors[0].orcid}' was found (first of 1 author identifier).`,
-    `The resource author identifier was missing.`, 'REQUIRED', 'Findable');
-  
-  addResult(author.length > 0,
-    `The resource author affiliation was found.`,
-    `The resource author affiliation was missing.`, 'REQUIRED', 'Findable');
+        result.warningChecks.push({
 
-  addResult(!!md.publicationDate,
-    `The resource publication date '${md.publicationDate}' was found`,
-    `No resource publication date was found.`, 'REQUIRED', 'Findable');
+          message: failureMsg,
+          level,
+          principle
 
-  addResult(!!md.doi,
-    `The digital object identifier '${md.doi}' was found.`,
-    `No digital object identifier was found.`, 'REQUIRED', 'Findable');
+        });
 
-  const shortCount = md.short_description?.split(/\s+/).filter(Boolean).length || 0;
-  addResult(shortCount >= 20,
-    `Short Description has ${shortCount} words. Meets the minimum recommended value of 20.`,
-    `Short Description has ${shortCount} words. Minimum recommended is 20.`, 'REQUIRED', 'Findable');
-    
-  const docCount = md.documentation?.split(/\s+/).filter(Boolean).length || 0;
-  addResult(docCount >= 100,
-    `Documentation has ${docCount} words. Meets the minimum recommended value of 100.`,
-    `Documentation has ${docCount} words. Minimum recommended is 100.`, 'REQUIRED', 'Findable');
+      }
 
-  addResult(!!md.spatialExtent,
-    `A spatial extent was found.`,
-    `The spatial extent was missing.`, 'REQUIRED', 'Findable');
+    }
 
-  addResult(!!md.corresponding_author,
-    `The corresponding author '${md.authors[0].name} (${md.corresponding_author})' was found.`,
-    `No corresponding author was found.`, 'REQUIRED', 'Accessible');
-
-  addResult(!!md.doi,
-    `The digital object identifier '${md.doi}' was found.`,
-    `No digital object identifier was found.`, 'REQUIRED', 'Accessible');
-
-  addResult(!!md.metadataIdentifier,
-    `The metadata was publicly available.`,
-    `No metadata was found.`, 'REQUIRED', 'Accessible');
-
-  addResult(!!md.metadataIdentifier,
-    `A resource landing page url 'https://taipidata.ncu.edu.tw/${md.metadataIdentifier}' was found.`,
-    `No resource landing page url.`, 'REQUIRED', 'Accessible');
-    
-  addResult(!!md.metadataIdentifier,
-    `A downloading url 'https://taipidata.ncu.edu.tw/${md.metadataIdentifier}.tar.gz' was found.`,
-    `No downloading url was found.`, 'REQUIRED', 'Accessible');
-
-  addResult(!!md.metadataCode,
-    `Interactive map 'https://taipidata.ncu.edu.tw/map?id=${md.metadataIdentifier}' was found.`,
-    `Interactive map was found.`, 'OPTIONAL', 'Accessible');
-
-  addResult(!!md.metadataCode,
-    `TaipiHUB 'https://taipidata.ncu.edu.tw/map?id=${md.metadataIdentifier}' was found.`,
-    `No TaipiHUB was found.`, 'OPTIONAL', 'Accessible');
-
-  addResult(!!md.metadataIdentifier,
-    `API 'https://taipidata.ncu.edu.tw/generate-api?id=${md.metadataIdentifier}' was found.`,
-    `No API was found.`, 'REQUIRED', 'Accessible');
-
-  addResult(docCount >= 100,
-    `Documentation has ${docCount} words. Meets the minimum recommended value of 100.`,
-    `Documentation has ${docCount} words. Minimum recommended is 100.`, 'REQUIRED', 'Interoperable');
-    
-  addResult(!!md.metadataCode,
-    `TaipiHUB 'https://taipidata.ncu.edu.tw/map?id=${md.metadataIdentifier}' was found.`,
-    `No TaipiHUB was found.`, 'OPTIONAL', 'Interoperable');
+  }
 
 
-   addResult(!!md.metadataIdentifier,
-    `API 'https://taipidata.ncu.edu.tw/generate-api?id=${md.metadataIdentifier}' was found.`,
-    `No API was found.`, 'REQUIRED', 'Interoperable');
- 
-  addResult(!!md.license,
-    `The resource license was found.`,
-    `No resource license was found.`, 'REQUIRED', 'Reusable');
+  rules.checks.forEach(rule => {
+
+    const {
+
+      condition,
+      context
+
+    } = evaluateRule(md, rule);
 
 
-  addInfo(`The resource type is: ${md.resourceType || 'dataset'}`,'INFO','Findable');
+    const successMsg =
+      replaceTemplate(
+        rule.successMsg,
+        context
+      );
+
+
+    const failureMsg =
+      replaceTemplate(
+        rule.failureMsg,
+        context
+      );
+
+
+    addResult(
+
+      condition,
+
+      successMsg,
+
+      failureMsg,
+
+      rule.level,
+
+      rule.principle
+
+    );
+
+  });
+
+
+
+  rules.info.forEach(rule => {
+
+    result.informational++;
+
+    result.informationalCheck.push({
+
+      message:
+
+        replaceTemplate(
+
+          rule.message,
+
+          {
+
+            value:
+
+              md[rule.field]
+              || "dataset"
+
+          }
+
+        ),
+
+      level: "INFO",
+
+      principle: rule.principle
+
+    });
+
+  });
 
 
   return result;
-}
 
+}
   // -------------------
   // FETCH HANDLER
   // -------------------
