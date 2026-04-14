@@ -1,9 +1,14 @@
-# TaiPI Metadata Assessment (React)
+# TaiPI Metadata Assessment
 
-A lightweight React app to **fetch** dataset metadata from a JSON or XML
-URL and **score** it against FAIR principles (Findable, Accessible,
-Interoperable, Reusable). Results are shown as a summary chart plus
-categorized checklists (Passed / Failed / Warnings / Info).
+The Metadata Assessment Tool is a web-based application designed to evaluate the completeness and quality of metadata records against predefined validation criteria.
+The tool supports dynamic configuration using JSON, allowing users to easily customize validation rules without modifying the application source code.
+
+By externalizing validation logic into JSON files, the system becomes:
+
+- flexible
+- easily maintainable
+- adaptable to different metadata standards
+- scalable for new validation requirements
 
 ## ✨ Features
 
@@ -50,26 +55,7 @@ Checks currently include (examples):
 
 > You can easily add or adjust checks inside `checkMetadata(md)`.
 
-## 📦 Tech Stack
 
--   **React** with hooks
--   **React-Bootstrap** (`Container`, `Tabs`, `Tab`)
--   **framer-motion** (for smooth UI transitions)
--   **fast-xml-parser** (XML → JSON)
--   Local components:
-    -   `SummaryChart`
-    -   `AssessmentSection`
-    -   `CheckList`
-
-## 📁 Project Structure (essential parts)
-
-    src/
-      App.jsx
-      App.css
-      components/
-        SummaryChart.jsx
-        AssessmentSection.jsx
-        CheckList.jsx
 
 ## 🔌 Expected Metadata Shape
 
