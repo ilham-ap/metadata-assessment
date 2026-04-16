@@ -10,7 +10,7 @@ By externalizing validation logic into JSON files, the system becomes:
 - adaptable to different metadata standards
 - scalable for new validation requirements
 
-## ✨ Features
+## Features
 
 -   **URL-based fetch** of JSON or XML (`application/json`,
     `application/xml`, `text/xml`, or JSON served as `text/plain`)
@@ -21,7 +21,7 @@ By externalizing validation logic into JSON files, the system becomes:
 -   **Tabbed checklists** (Passed, Failed, Warnings, Info)
 
 
-## 🧩 Core Logic
+## Core Logic
 
 The main logic lives in `checkMetadata(md)`, which inspects a metadata
 object and produces:
@@ -57,7 +57,7 @@ Checks currently include (examples):
 
 
 
-## 🔌 Expected Metadata Shape
+## Expected Metadata Shape
 
 The app normalizes input so `checkMetadata` receives a single **dataset
 object**.\
@@ -103,7 +103,7 @@ For XML, the parser expects a root `<dataset>` with nested authors:
 The app flattens `authors` to an array if it detects
 `dataset.authors.author`.
 
-## ▶️ Getting Started
+## Getting Started
 
 ### 1) Install
 
@@ -147,7 +147,7 @@ yarn build
 pnpm build
 ```
 
-## 🖱️ How to Use
+## How to Use
 
 1.  Start the app.
 2.  Paste a **JSON** or **XML** URL into the input box.
@@ -162,7 +162,7 @@ pnpm build
 
 
 
-## 🔧 Customization
+## Customization
 
 -   Add or tune checks in `checkMetadata(md)`.
 -   Change thresholds (e.g., title 4 words, documentation 100 words) to
@@ -172,13 +172,13 @@ pnpm build
 -   Extend UI by editing `SummaryChart`, `AssessmentSection`, and
     `CheckList`.
 
-## ✅ Accessibility & UX Notes
+## Accessibility & UX Notes
 
 -   Tabs consolidate results (Passed/Failed/Warnings/Info).
 -   `SummaryChart` communicates distribution at a glance.
 -   Progress bars per FAIR principle show coverage vs. requirements.
 
-## 🧪 Testing Tips
+## Testing Tips
 
 -   Test JSON with missing fields to verify Failed/Warn counts.
 -   Test XML with/without `<authors>`; ensure author normalization
